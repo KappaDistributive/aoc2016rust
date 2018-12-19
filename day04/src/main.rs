@@ -63,6 +63,25 @@ fn isolate_room(input: &str) -> String {
     }
 }
 
+fn isolate_room_dashed(input: &str) -> String {
+    lazy_static! {
+        static ref RE_ROOM: Regex = Regex::new(r"(?P<room>[\-a-z0-9]+)\[").unwrap();
+        static ref RE_ALPHA: Regex = Regex::new(r"[\-a-z]").unwrap();
+    }
+    match RE_ROOM.captures(input) {
+        Some(cap) => {
+            let mut result: String = String::new();
+            for c in RE_ALPHA.captures_iter(cap.name("room").map_or("", |m| m.as_str())) {
+                result.push_str(c.get(0).unwrap().as_str());
+            }
+            result
+        }
+        None => {
+            panic!("Couldn't retrieve room from: {}", input);
+        }
+    }
+}
+
 fn isolate_sector_id(input: &str) -> u32 {
     lazy_static! {
         static ref RE_SECTOR_ID: Regex = Regex::new(r"(?P<sector_id>[0-9]+)").unwrap();
@@ -93,8 +112,30 @@ fn solve_part_1(input_str: &str) -> u32 {
     result
 }
 
+fn solve_part_2(input_str: &str) -> u32 {
+    let mut result: Vec<String> = Vec::new();
+    for line in input_str.trim().lines() {
+        let mut decrypted: String = String::new();
+        for c in isolate_room_dashed(line).chars() {
+            if c == '-' {
+                decrypted.push(' ');
+            }
+            else {
+                decrypted.push(char::from((((c as u8 - 'a' as u8) as u32 + isolate_sector_id(line)) % 26) as u8 + 'a' as u8));
+            }
+        }
+        decrypted.push_str(&format!(" ID: {} ",isolate_sector_id(line)));
+        result.push(decrypted);
+    }
+    for r in result {
+        println!("{}", r);
+    }
+    0
+}
+
 fn main() {
     println!("Answer part 1: {}", solve_part_1(INPUT));
+    solve_part_2(INPUT);
 }
 
 #[cfg(test)]
